@@ -42,18 +42,23 @@ for i in range(100):
         cell._energy = 0.001 / (GAMMA - 1.)
     cell._momentum = 0.
     cell._midpoint = (i+0.5)/100.
-    # set the neighbour of the previous cell
-    #I am uncertain about this part
+    # Add cell to list cells
     cells.append(cell)
-    #cells[-1]._right_ngb = cell
-
+    # Set up right neightbour of cells
     cell._right_ngb=cells[i-1]
-
 cells[0]._right_ngb=cells[0]
 
+#Add ghost cells(don't think we need this)
+#cells.insert(0,cells[0])
+#cells.append(cells[(len(cells)-1)])
+
+# Checking that the properties change in the middle for initial consitions
 print([cell._right_ngb._mass for cell in cells[49:51]],[cell._mass for cell in cells[49:51]])
 
-i=0.1
+j=0         #Counter
+i=0.0       #Initial time
+
+# Loop over time
 while i<0.2:
     for cell in cells:
         # Set up the primative variables
@@ -70,30 +75,55 @@ while i<0.2:
         cell._pressure = pressure   
     
     for cell in cells:
-        # Do the boundary conditions
-        cell_right = cell._right_ngb        
+        # Deal with the ghost neighbours at the boundaries
+        if cell==cells[0]:
+            #The leftmost cell
+            cell_right = cell
+            velocityL = -cell._velocity
+            velocityR = cell_right._velocity
+            #print("left",velocityL,velocityR)
+            
+        elif cell==cells[99]:
+            #The rightmost cell
+            cell_right = cell            
+            velocityL = cell._right_ngb._velocity
+            velocityR = -cell_right._right_ngb._velocity  
+            #print(j," right ",velocityL,velocityR)
+            
+        else:
+            #The middle cells
+            cell_right = cell._right_ngb 
+            velocityL = cell._velocity
+            velocityR = cell_right._velocity
+            #print(j," middle ", velocityL, velocityR)
+
+        #Left cell values
         densityL = cell._density
-        velocityL = cell._velocity
         pressureL = cell._pressure
+        #Right cell values
         densityR = cell_right._density
-        velocityR = cell_right._velocity
         pressureR = cell_right._pressure
+        #Riemann solver
         densitysol,velocitysol,pressuresol,flag = solver.solve(densityL, velocityL, pressureL, densityR, velocityR, pressureR)
-        
+
+        #Calculate the fluxes
         flux_mass = densitysol * velocitysol
         flux_momentum = densitysol * velocitysol * velocitysol + pressuresol
         flux_energy = (((pressuresol*GAMMA) / ((GAMMA - 1))) + (0.5 * densitysol* velocitysol * velocitysol))*velocitysol
     
-        
         A = cell._surface_area
+        #Update cell parameters
         cell._mass = cell._mass - flux_mass * A * timestep
         cell._momentum = cell._momentum - flux_momentum * A * timestep
         cell._energy = cell._energy - flux_energy * A * timestep
-        
+        #Update right neighbour parameters
         cell_right._mass = cell_right._mass + flux_mass * A * timestep
         cell_right._momentum = cell_right._momentum + flux_momentum * A * timestep
         cell_right._energy = cell_right._energy + flux_energy * A * timestep
-    
-    i = i + timestep
-    
+        
+        j=j+1           #Counter
+    i = i + timestep    #Increase the time    
+
+#Plot the midpoint of each cell versus the density of the cell    
 plt.plot([ cell._midpoint for cell in cells], [cell._density for cell in cells])
+#plt.ylim(0,1)
