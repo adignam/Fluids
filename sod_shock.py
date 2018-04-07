@@ -2,8 +2,8 @@
 
 from riemannsolver import RiemannSolver
 import matplotlib.pyplot as plt
+import copy
 import sys
-import numpy as np
 
 ###############################################################################
 
@@ -13,11 +13,10 @@ class Cell(object):
     def __init__(self):
         self._volume = 0.
         self._mass = 0.
-        self._momentum = [0.,0.]
+        self._momentum = 0.
         self._energy = 0.
         self._density = 0.
-        self._velocity = [0.,0.]
-        self._midpoint = np.zeros((1,1))
+        self._velocity = 0.
         self._pressure = 0.
         self._right_ngb = None
         self._surface_area = 1.
@@ -118,13 +117,32 @@ while i<total_time:
         cell._velocity = velocity   
         cell._pressure = pressure   
         
-    cells[0]._right_ngb=cells[99]
+        
+        
+    cells[0]._right_ngb=copy.copy(cells[0])
+    cells[0]._right_ngb._density = cells[0]._density                                   
+    cells[0]._right_ngb._velocity = -cells[0]._velocity                                         
+    cells[0]._right_ngb._pressure = cells[0]._pressure  
+                                       
+    Rcells=copy.copy(cells[99])
+    Rcells._right_ngb=cells[99]
+    Rcells._density = cells[99]._density                                 
+    Rcells._velocity = -cells[99]._velocity                                     
+    Rcells._pressure = cells[99]._pressure  
+    flux(Rcells)    
 
     for cell in cells:
         
         flux(cell)
 
     i = i + timestep    #Increase the time 
+    #plt.plot([cell._midpoint for cell in cells], [cell._density for cell in cells], label="Density")
 
 ###############################################################################
+
+#Plot the midpoint of each cell versus the density of the cell    
 plt.scatter([cell._midpoint for cell in cells], [cell._density for cell in cells], label="Density",s=5)
+plt.scatter([cell._midpoint for cell in cells], [-cell._velocity for cell in cells], label="Velocity",s=5)
+plt.scatter([cell._midpoint for cell in cells], [cell._pressure for cell in cells], label ="Pressure",s=5)
+plt.legend()
+plt.xlabel("Cell Position")
