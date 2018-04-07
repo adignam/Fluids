@@ -189,4 +189,4 @@ plt.scatter([cell._ymidpoint for cell in cells], [cell._density for cell in cell
 #plt.scatter([cell._ymidpoint for cell in cells], [cell._yvelocity for cell in cells], label="Density",s=5)
 plt.legend()
 plt.xlabel("Cell Position")
-plt.ylabel("Cell Density")
+plt.ylabel("Cell Density") 
